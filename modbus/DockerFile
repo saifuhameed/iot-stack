@@ -1,0 +1,21 @@
+FROM debian:bookworm-slim
+
+# Install build tools and required libraries
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libmodbus-dev \
+    libcjson-dev \
+    libsqlite3-dev \
+    libhiredis-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /home/iot/apps/modbus
+
+# Copy source code
+COPY . .
+
+# Compile your C application
+RUN gcc -o  modbus_to_redis  modbus_to_redis.c config.c -lmodbus -lcjson -lsqlite3 -lhiredis
+
+# Run the app
+CMD ["./modbus_to_redis"]

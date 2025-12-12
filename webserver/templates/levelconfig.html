@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tank Level Monitor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* Base */
+    body { margin:0; background:#0f1221; color:#e6e9f5; font-family:Inter,system-ui,sans-serif; }
+    .app { max-width:1200px; margin:24px auto; padding:16px; }
+    .header { margin-bottom:16px; font-size:20px; font-weight:600; }
+
+    /* Layout with areas so we can reorder on mobile */
+    .grid {
+      display:grid;
+      grid-template-columns:380px 1fr;
+      gap:16px;
+      grid-template-areas:"params readings";
+      align-items:start;
+    }
+    .card { background:#161a2e; border:1px solid #2a315a; border-radius:14px; padding:16px; }
+    .params { grid-area:params; }
+    .readings { grid-area:readings; }
+
+    .section-title { font-size:14px; font-weight:700; color:#a8afcf; text-transform:uppercase; margin-bottom:12px; }
+    .sensor-title { font-size:16px; font-weight:600; margin-bottom:10px; }
+	.sensor-status { font-size:12px; font-weight:400; margin-bottom:10px; }
+    .status { margin-top:8px; font-size:12px; color:#a8afcf; }
+	.status-ok { color:#44ff44; }
+	.status-fault { color:#ff4444; }
+    /* Form */
+    .form-group { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+    label { font-size:13px; color:#a8afcf; }
+    input, select {
+      background:#10152b; color:#e6e9f5; border:1px solid #2a315a;
+      border-radius:8px; padding:8px 10px; font-size:14px;
+    }
+    .button {
+      background:linear-gradient(90deg,#4aa3ff,#6f7cff); border:none; color:white;
+      padding:10px 12px; border-radius:8px; font-weight:600; cursor:pointer;
+    }
+
+    /* Stats */
+    .stats-grid { display:grid; grid-template-columns:repeat(2,minmax(240px,1fr)); gap:12px; }
+    .stat { background:#1c2140; border:1px solid #2a315a; border-radius:12px; padding:12px; }
+    .stat .label { font-size:12px; color:#a8afcf; text-transform:uppercase; }
+    .stat .value { font-size:16px; font-weight:600; }
+
+    /* Vertical level bar */
+    .bar-container {
+      width:40px; height:150px; border:1px solid #2a315a; border-radius:6px;
+      background:#10152b; display:flex; align-items:flex-end; margin:8px auto;
+	  position:relative;
+    }
+    .bar-fill {
+      width:100%; background:linear-gradient(180deg,#4aa3ff,#6f7cff);
+      border-radius:6px 6px 0 0; transition:height 0.4s ease;
+    }
+    .bar-label { text-align:center; font-size:12px; margin-top:4px; }
+	
+	
+	 /* Marker triangle (arrow pointing left) */
+	.marker {
+		position: absolute;
+		right: -10px;              /* Move to right side */
+		width: 0;
+		height: 0;
+
+		/* Triangle pointing LEFT */
+		border-top: 4px solid transparent;
+		border-bottom: 4px solid transparent;
+		border-right: 10px solid ;  
+	}
+
+	/* Low level marker position */
+	.low-marker {
+		
+		border-right-color:#ff8800;
+	}
+
+	/* High level marker position */
+	.high-marker {		
+		border-right-color:#ff4444;
+	}
+
+	
+    /* Mobile */
+    @media (max-width:900px) {
+      .grid {
+        grid-template-columns:1fr;
+        grid-template-areas:
+          "readings"
+          "params";
+      }
+      body { font-size:16px; }
+      .header { font-size:22px; text-align:center; }
+      .card { padding:12px; border-radius:12px; }
+      .button { width:100%; padding:14px; font-size:16px; }
+      input, select { font-size:16px; padding:12px; }
+      .stat .value { font-size:18px; }
+      .bar-container { height:120px; width:30px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">Tank Level Monitor</div>
+
+    <div class="grid">
+      <!-- Readings (shown first on mobile) -->
+      <div class="card readings">
+        <div class="section-title">Tank readings</div>
+        <div class="sensor-title" id="tankTitle">Overhead Tank 1</div>		
+        <div class="stats-grid">
+		  <div class="stat"><div class="label">Sensor Status</div><div class="value" id="sensorStatus">--</div></div>
+          <div class="stat"><div class="label">Liquid temperature</div><div class="value" id="liquidTemperature">--</div></div>
+          <div class="stat"><div class="label">Sensor cap</div><div class="value" id="sensorCap">--</div></div>
+          <div class="stat"><div class="label">Frequency</div><div class="value" id="frequency">--</div></div>          
+		  <div class="stat"><div class="label">Liquid level</div><div class="value" id="liquidLevel">--</div></div>
+          <div class="stat"><div class="label">Alarm</div><div class="value" id="alarm">--</div></div>
+		  <div class="stat">
+            <div class="label">Liquid level (%)</div>
+            <div class="bar-container">
+				<div class="bar-fill" id="levelBar" style="height:0%"></div>
+				<!-- Low & High markers -->
+				<div class="marker low-marker" id="highArrow"></div>
+				<div class="marker high-marker" id="lowArrow"></div>
+
+
+			</div>
+            <div class="bar-label" id="liquidLevelPct">--</div>
+          </div>
+          
+        </div>
+
+        <div class="status" id="readStatus">Polling: stopped</div>
+      </div>
+
+      <!-- Parameters -->
+      <div class="card params">
+        <div class="section-title">Parameters</div>
+
+        <div class="form-group">
+          <label>Select tank</label>
+          <select id="tankSelect">
+            <option value="overhead1">Overhead Tank 1</option>
+            <option value="overhead2">Overhead Tank 2</option>
+            <option value="underground">Underground Tank</option>
+          </select>
+        </div>
+
+        <!-- Editable parameters for selected tank -->
+        <div class="form-group"><label>Sensor cap zero pf</label><input id="zeroPf" type="text" placeholder="e.g., 5.0"></div>
+        <div class="form-group"><label>Sensor cap full pf</label><input id="fullPf" type="text" placeholder="e.g., 120.0"></div>        
+        <div class="form-group"><label>Level full mm</label><input id="levelFullMm" type="text" placeholder="e.g., 350"></div>
+		<div class="form-group"><label>Sensor cap pf per cm (read only)</label><input id="pfPerCm" type="text"  disabled></div>
+        <div class="form-group"><label>Level high set</label><input id="levelHighSet" type="text" placeholder="e.g., 300"></div>
+        <div class="form-group"><label>Level low set</label><input id="levelLowSet" type="text" placeholder="e.g., 50"></div>
+        <div id="advanced" style="display: none;">
+		<div class="form-group"><label>OSC Res1</label><input id="oscRes1" type="text" placeholder="e.g., 1.5"></div>
+        <div class="form-group"><label>OSC Res2</label><input id="oscRes2" type="text" placeholder="e.g., 2.1"></div>
+        <div class="form-group"><label>OSC KVal</label><input id="oscKVal" type="text" placeholder="e.g., 0.42"></div>
+		</div>
+
+        <button class="button" id="updateParamsBtn">Update Parameters</button>&nbsp;<a href="javascript:void(0);" onclick ="showAdvanced()" id="showadv">Show advanced</a>
+        <div class="status" id="updateStatus">Ready</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Endpoints:
+    // GET /api/readings?tank=overhead1|overhead2|underground
+    //   -> { liquidTemperature, sensorCap, frequency, liquidLevel, liquidLevelPct, alarm }
+    // GET /api/parameters?tank=overhead1|overhead2|underground
+    //   -> { zeroPf, fullPf, pfPerCm, levelFullMm, levelHighSet, levelLowSet, oscRes1, oscRes2, oscKVal }
+    // POST /api/update-parameters
+    //   body: { tank, zeroPf, fullPf, pfPerCm, levelFullMm, levelHighSet, levelLowSet, oscRes1, oscRes2, oscKVal }
+
+    const READINGS_URL = "/api/readings";
+    const PARAMS_GET_URL = "/api/parameters";
+    const PARAMS_UPDATE_URL = "/api/update-parameters";
+	const RESPONSE_GET_URL  = "/api/get-update-status";
+    const POLL_INTERVAL_MS = 1000;
+	var advanced_visible=false;
+    const el = (id) => document.getElementById(id);
+    const fmt = (val, unit="") => (val===null||val===undefined) ? "--" : `${val}${unit}`;
+    const clampPct = (n) => Math.max(0, Math.min(100, Number(n)));
+
+    function tankLabel(value) {
+      switch (value) {
+        case "overhead1": return "Overhead Tank 1";
+        case "overhead2": return "Overhead Tank 2";
+        case "underground": return "Underground Tank";
+        default: return value;
+      }
+    }
+	function showAdvanced(){
+		advanced_visible=!advanced_visible;
+		if(advanced_visible){		
+			el("advanced").style.display = "block";
+			el("showadv").innerHTML="Hide advanced";
+			loadParameters();
+		}else{
+			el("advanced").style.display = "none";
+			el("showadv").innerHTML="Show advanced";
+		}
+	}
+    // Readings UI
+    function updateReadings(data) {
+      el("liquidTemperature").textContent = fmt(data.liquidTemperature, " °C");
+      el("sensorCap").textContent        = fmt(data.sensorCap, " pF");
+      el("frequency").textContent        = fmt(data.frequency, " Hz");
+      el("liquidLevel").textContent      = fmt(data.liquidLevel, " mm");
+      const pct = clampPct(data.liquidLevelPct ?? 0);
+	  const hset = clampPct(data.liquidLevelHighSet ?? 0);
+	  const lset = clampPct(data.liquidLevelLowSet ?? 0);
+      el("liquidLevelPct").textContent   = fmt(pct, " %");
+      el("levelBar").style.height        = pct + "%";
+      el("alarm").textContent            = data.alarm ;
+	   // Set point markers
+	  //el("highPoint").style.bottom = hset + '%';
+      //el("lowPoint").style.bottom = lset + '%';
+	  // Arrow positions
+	  el("highArrow").style.bottom = hset + '%';
+	  el("lowArrow").style.bottom = lset + '%';
+	  el("sensorStatus").textContent = data.sensorStatus ;
+	  if(data.sensorStatus=="OK")
+	  {
+		el("sensorStatus").classList.remove('status-fault');
+		el("sensorStatus").classList.add('status-ok');
+	  }else{
+		el("sensorStatus").classList.remove('status-ok');
+		el("sensorStatus").classList.add('status-fault');
+	  }
+
+    }
+
+    async function fetchReadings() {
+      const tank = el("tankSelect").value;
+      try {
+        const res = await fetch(`${READINGS_URL}?tank=${encodeURIComponent(tank)}`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const payload = await res.json();
+        updateReadings(payload);
+        el("readStatus").textContent = "Polling: ok";
+      } catch (err) {
+        console.error("Readings error:", err);
+        el("readStatus").textContent = "Polling: error";
+      }
+    }
+
+    // Polling
+    let pollTimer = null;
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      fetchReadings();
+      pollTimer = setInterval(fetchReadings, POLL_INTERVAL_MS);
+    }
+    function stopPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = null;
+      el("readStatus").textContent = "Polling: stopped";
+    }
+
+    // Parameters UI
+    async function loadParameters() {
+      const tank = el("tankSelect").value;
+      el("updateStatus").textContent = "Loading...";
+      try {
+        const res = await fetch(`${PARAMS_GET_URL}?tank=${encodeURIComponent(tank)}`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const p = await res.json();
+        el("zeroPf").value      = p.zeroPf ?? "";
+        el("fullPf").value      = p.fullPf ?? "";
+        el("pfPerCm").value     = p.pfPerCm ?? "";
+        el("levelFullMm").value = p.levelFullMm ?? "";
+        el("levelHighSet").value= p.levelHighSet ?? "";
+        el("levelLowSet").value = p.levelLowSet ?? "";
+        el("oscRes1").value     = p.oscRes1 ?? "";
+        el("oscRes2").value     = p.oscRes2 ?? "";
+        el("oscKVal").value     = p.oscKVal ?? "";
+        el("updateStatus").textContent = "Loaded";
+      } catch (err) {
+        console.error("Load parameters error:", err);
+        el("updateStatus").textContent = "Load failed";
+      }
+    }
+
+    async function updateParameters() {
+      const tank = el("tankSelect").value;
+      const payload = {
+        tank,
+        zeroPf: el("zeroPf").value,
+        fullPf: el("fullPf").value,        
+        levelFullMm: el("levelFullMm").value,
+        levelHighSet: el("levelHighSet").value,
+        levelLowSet: el("levelLowSet").value       
+      };
+	  if (advanced_visible){
+		payload.oscRes1=el("oscRes1").value;
+		payload.oscRes2=el("oscRes2").value;
+		payload.oscKVal=el("oscKVal").value;	   
+	  }
+      el("updateStatus").textContent = "Updating...";
+      try {
+        const res = await fetch(PARAMS_UPDATE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await res.json();
+        
+        el("updateStatus").textContent = "Update posted. It may take few seconds to update in device";
+		const res2 = await fetch(`${RESPONSE_GET_URL}`, { cache: "no-store" });
+        if (!res2.ok) throw new Error(`HTTP ${res.status}`);
+		fetchReadings(); // reflect normalized values if server adjusts
+		//loadParameters();
+        const p = await res2.json();
+		el("updateStatus").textContent=p.status;
+		
+      } catch (err) {
+        console.error("Update parameters error:", err);
+        el("updateStatus").textContent = "Update failed";
+        alert("Failed to update parameters: " + err.message);
+      }
+    }
+
+    // Wire events
+    el("tankSelect").addEventListener("change", () => {
+      el("tankTitle").textContent = tankLabel(el("tankSelect").value);
+      fetchReadings();
+      loadParameters();
+    });
+    el("updateParamsBtn").addEventListener("click", updateParameters);
+
+    // Init
+    el("tankTitle").textContent = tankLabel(el("tankSelect").value);
+    startPolling();
+    loadParameters();
+
+    // Pause polling when tab hidden
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stopPolling(); else startPolling();
+    });
+  </script>
+</body>
+</html>

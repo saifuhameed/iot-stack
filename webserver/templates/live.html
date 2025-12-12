@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IoT Dashboard</title>
+<style>
+body { font-family: "Segoe UI", sans-serif; margin: 30px; background: linear-gradient(135deg,#eef2f3,#d9e2ec); }
+.tabs { display:flex; gap:0; margin-bottom:15px; border-radius:10px; overflow:hidden; box-shadow:0 3px 8px rgba(0,0,0,0.12);}
+.tab { padding:12px 22px; background:#ffffffcc; cursor:pointer; border-right:1px solid #ccc; font-weight:500;}
+.tab.active { background:#4a90e2; color:#fff; }
+.frame { display:none; padding:20px; border-radius:12px; background:#ffffffdd; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.frame.active { display:block; }
+
+
+  .tank-container, .rooms-container { display: flex; gap: 40px; flex-wrap: wrap; }
+  .tank { width: 160px; height: 200px; border: 3px solid #4a90e2; border-radius: 12px; position: relative; overflow: hidden; background: #e0e7ff; }
+  .tank-fill { width: 100%; background: #4a90e2; position: absolute; bottom: 0; height: 0%; transition: 0.5s; }
+  .temp-display, .level-display { position: absolute; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 5px; font-size: 14px; font-weight: bold; }
+  .temp-display { bottom: 5px; }
+  .level-display { top: 5px; }
+  .wave { position: absolute; bottom: 0; width: 200%; height: 20px; background: rgba(255,255,255,0.3); border-radius: 50%; animation: waveAnim 2s infinite linear; }
+  @keyframes waveAnim { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+ 
+
+/* small room boxes */
+.rooms-container { display:flex; gap:20px; flex-wrap:wrap; }
+.room { width:180px; height:120px; border:2px solid #4a90e2; border-radius:12px; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#fff; }
+.room .name { font-size:16px; }
+.room .temp { font-size:20px; font-weight:700; margin-top:6px; }
+
+
+/* other widgets kept simple */
+.beaufort-scale { margin-top:20px; font-family:monospace; background:#f7f7f7; padding:10px; border-radius:8px; }
+</style>
+</head>
+<body>
+<h1 style="text-align:center; margin-bottom:25px; color:#333;">IoT Sensor Live Dashboard  </h1>
+<div class="tabs">
+  <div class="tab active" data-target="frame1">Tanks</div>
+  <div class="tab" data-target="frame2">Rooms</div>
+  <div class="tab" data-target="frame3">Weather</div>
+  <div class="tab" data-target="frame4">Wind</div>
+  <div class="tab" data-target="frame5">Registers</div>
+</div>
+
+<div id="frame1" class="frame active">
+  <h2>Tanks</h2>
+  <div class="tank-container">
+    <div>
+      <h3>Overhead Tank1</h3>
+	  <h4>(Municipal Water)</h4> 
+      <div class="tank">
+        <div id="ov1_level" class="tank-fill"></div>
+		
+        <div class="wave" id="ov_wave1"></div>
+        <div id="ov1_temp_display" class="temp-display">0 °C</div>
+        <div id="ov1_level_display" class="level-display">0% (0 L)</div>
+      </div>
+    </div>
+	    <div>
+      <h3>Overhead Tank2</h3>
+	  <h4>(Borewell Water)</h4>  
+      <div class="tank">
+        <div id="ov2_level" class="tank-fill"></div>
+		
+        <div class="wave" id="ov_wave2"></div>
+        <div id="ov2_temp_display" class="temp-display">0 °C</div>
+        <div id="ov2_level_display" class="level-display">0% (0 L)</div>
+      </div>
+    </div>
+    <div style="visibility:hidden;">
+      <h3>Underground Tank</h3>
+	  <h4>(Municipal Water)</h4>
+      <div class="tank">
+        <div id="ug_level" class="tank-fill"></div>
+		<div   id="ug_cap"></div>
+        <div class="wave" id="ug_wave"></div>
+        <div id="ug_temp_display" class="temp-display">0 °C</div>
+        <div id="ug_level_display" class="level-display">0% (0 L)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="frame22" class="frame">
+  <h2>Room Temperatures</h2>
+<div class="rooms-container">
+  <div class="room" id="room1">
+    <div>Room 1</div>
+    <div><span id="room1_temp">-- °C</span></div>
+  </div>
+  <div class="room" id="room2">
+    <div>Room 2</div>
+    <div><span id="room2_temp">-- °C</span></div>
+  </div>
+  <div class="room" id="room3">
+    <div>Room 3</div>
+    <div><span id="room3_temp">-- °C</span></div>
+  </div>
+  <div class="room" id="room4">
+    <div>Room 4</div>
+    <div><span id="room4_temp">-- °C</span></div>
+  </div>
+</div>
+</div>
+
+<div id="frame33" class="frame">
+  <h2>Weather Sensors</h2>
+  <div style="margin-bottom:20px; font-size:22px;">Humidity: <span id="humidity">0%</span></div>
+  <div style="margin-bottom:20px; font-size:22px;">Ambient Temperature: <span id="ambient_temp">0 °C</span></div>
+  <div>
+    <h3>Rain Sensor</h3>
+    <div id="rain_icon" style="font-size:50px; transition:0.3s;">☀️</div>
+    <div style="font-size:20px; margin-top:10px;" id="rain_status">Dry</div>
+  </div>
+</div>
+
+<div id="frame44" class="frame">
+  <h2>Wind Sensors</h2>
+  <div style="display:flex; gap:40px; flex-wrap:wrap;">
+    <div style="background:#fff; padding:20px; border-radius:15px; width:220px; box-shadow:0 4px 12px rgba(0,0,0,0.15); text-align:center;">
+      <h3>Wind Speed</h3>
+      <div style="width:150px; height:150px; border-radius:50%; border:8px solid #4a90e2; margin:auto; position:relative;">
+        <div id="wind_speed_needle" style="width:4px; height:60px; background:#ff3333; position:absolute; bottom:75px; left:73px; transform-origin:50% 100%; transform:rotate(0deg); transition:0.4s;"></div>
+      </div>
+      <div style="margin-top:10px; font-size:22px;" id="wind_speed">0 km/h</div>
+      <div class="beaufort-scale" id="beaufort_scale">Beaufort: Calm</div>
+    </div>
+    <div style="background:#fff; padding:20px; border-radius:15px; width:220px; box-shadow:0 4px 12px rgba(0,0,0,0.15); text-align:center;">
+      <h3>Wind Direction</h3>
+      <div style="width:150px; height:150px; border-radius:50%; border:8px solid #4a90e2; margin:auto; position:relative; font-size:14px;">
+        <div style="position:absolute; top:-20px; left:50%; transform:translateX(-50%);">N</div>
+        <div style="position:absolute; bottom:-20px; left:50%; transform:translateX(-50%);">S</div>
+        <div style="position:absolute; top:50%; left:-20px; transform:translateY(-50%);">W</div>
+        <div style="position:absolute; top:50%; right:-20px; transform:translateY(-50%);">E</div>
+        <div id="wind_dir" style="width:4px; height:65px; background:#ff3333; position:absolute; bottom:75px; left:73px; transform-origin:50% 100%; transform:rotate(0deg); transition:0.4s;"></div>
+      </div>
+      <div style="margin-top:10px; font-size:20px;">Direction</div>
+    </div>
+  </div>
+</div>
+
+<div id="frame55" class="frame">
+  <h2>Register Values</h2>
+  <div style="margin-bottom:20px; font-size:22px;">Register: <span id="humidity">0%</span></div>
+  <div style="margin-bottom:20px; font-size:22px;">Ambient Temperature: <span id="ambient_temp">0 °C</span></div>
+   
+</div>
+<script>
+  const tankCapacities = { overhead1: 900,overhead2: 900, underground: 5000 }; // in litres
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.frame').forEach(f => f.classList.remove('active'));
+      tab.classList.add('active');
+      const frameId = tab.getAttribute('data-target');
+      document.getElementById(frameId).classList.add('active');
+    });
+  });
+
+  function getBeaufort(windSpeed) {
+    if (windSpeed < 1) return 'Calm';
+    if (windSpeed <= 5) return 'Light Air';
+    if (windSpeed <= 11) return 'Light Breeze';
+    if (windSpeed <= 19) return 'Gentle Breeze';
+    if (windSpeed <= 28) return 'Moderate Breeze';
+    if (windSpeed <= 38) return 'Fresh Breeze';
+    if (windSpeed <= 49) return 'Strong Breeze';
+    if (windSpeed <= 61) return 'Near Gale';
+    if (windSpeed <= 74) return 'Gale';
+    if (windSpeed <= 88) return 'Strong Gale';
+    if (windSpeed <= 102) return 'Storm';
+    if (windSpeed <= 117) return 'Violent Storm';
+    return 'Hurricane';
+  }
+
+  function updateUI(data) {
+    document.getElementById("ov1_level").style.height = data.overhead1.level + "%";
+	//document.getElementById("ov1_cap").innerText = data.overhead1.capacitance + "pf";
+	document.getElementById("ov2_level").style.height = data.overhead2.level + "%";
+	//document.getElementById("ov2_cap").innerText = data.overhead2.capacitance + "pf";
+    document.getElementById("ug_level").style.height = data.underground.level + "%";
+    document.getElementById("ov1_temp_display").innerText = data.overhead1.temp + " °C";
+	document.getElementById("ov2_temp_display").innerText = data.overhead2.temp + " °C";
+    document.getElementById("ug_temp_display").innerText = data.underground.temp + " °C";
+
+    document.getElementById("ov1_level_display").innerText = `${data.overhead1.level}% (${Math.round(tankCapacities.overhead1*data.overhead1.level/100)} L)`;
+	document.getElementById("ov2_level_display").innerText = `${data.overhead2.level}% (${Math.round(tankCapacities.overhead2*data.overhead2.level/100)} L)`;
+    document.getElementById("ug_level_display").innerText = `${data.underground.level}% (${Math.round(tankCapacities.underground*data.underground.level/100)} L)`;
+
+    document.getElementById("humidity").innerText = data.humidity + "%";
+    document.getElementById("ambient_temp").innerText = data.ambient_temp + " °C";
+
+    document.getElementById("rain_status").innerText = data.rain ? "Raining" : "Dry";
+    document.getElementById("rain_icon").innerText = data.rain ? "🌧️" : "☀️";
+
+    document.getElementById("wind_speed").innerText = data.wind.speed + " km/h";
+    document.getElementById("wind_speed_needle").style.transform = `rotate(${data.wind.speed*3}deg)`;
+    document.getElementById("wind_dir").style.transform = `rotate(${data.wind.direction}deg)`;
+
+    document.getElementById("beaufort_scale").innerText = 'Beaufort: ' + getBeaufort(data.wind.speed);
+
+    document.getElementById('room1_temp').innerText = data.rooms.room1 + ' °C';
+    document.getElementById('room2_temp').innerText = data.rooms.room2 + ' °C';
+    document.getElementById('room3_temp').innerText = data.rooms.room3 + ' °C';
+    document.getElementById('room4_temp').innerText = data.rooms.room4 + ' °C';
+  }
+
+  const sampleData = {
+    overhead1: { level: 65, temp: 28 },
+	overhead2: { level: 65, temp: 28 },
+    underground: { level: 85, temp: 30 },
+    humidity: 55,
+    ambient_temp: 32,
+    rain: 1,
+    wind: { speed: 12, direction: 135 },
+    rooms: { room1: 24, room2: 26, room3: 25, room4: 23 }
+  };
+  // Periodic fetch from API every 5 seconds
+async function fetchData() {
+  try {
+    const response = await fetch('/api/iot_data'); // Flask API endpoint
+    const data = await response.json();
+    updateUI(data);
+  } catch (error) {
+    console.error("Failed to fetch data:", error);
+  }
+}
+fetchData();
+setInterval(fetchData, 5000);
+  //updateUI(sampleData);
+</script>
+</body>
+</html>

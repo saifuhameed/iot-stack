@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Modbus Register Dashboard</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Modbus Register Dashboard</h1>
+    <table>
+        <tr>
+            <th>Slave ID</th>
+            <th>Parameter</th>
+            <th>Register Address</th>
+            <th>Redis Key</th>
+            <th>Redis Value</th>
+        </tr>
+        {% for item in data %}
+        <tr>
+            <td>{{ item.slaveid }}</td>
+            <td>{{ item.parameter }}</td>
+            <td>{{ item.register }}</td>
+            <td>{{ item.redis_key }}</td>
+            <td>{{ item.redis_val }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
