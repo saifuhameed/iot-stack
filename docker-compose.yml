@@ -1,0 +1,35 @@
+version: "3.8"
+services:
+  modbus:
+    build: ./modbus
+    depends_on:
+      - redis
+    devices:
+      - "/dev/ttyS1:/dev/ttyS1"   # if hardware needed
+    volumes:
+      - ./modbus/db:/home/iot/apps/db        # share SQLite configs
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/home/iot/apps/db
+
+  flask:
+    build: ./webserver
+    ports:
+      - "80:80" # maps container port 80 to host port 80
+    depends_on:
+      - redis
+    volumes:
+      - ./modbus/db:/app/db        # mount SQLite DB
+
+  nodered:
+    image: nodered/node-red:latest
+    ports:
+      - "1880:1880"
+    depends_on:
+      - redis      
+    volumes:
+      - ./nodered-data:/data
