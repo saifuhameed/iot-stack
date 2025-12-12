@@ -8,7 +8,6 @@ services:
       - "/dev/ttyS1:/dev/ttyS1"   # if hardware needed
     volumes:
       - ./modbus/db:/home/iot/apps/db        # share SQLite configs
-
   redis:
     image: redis:latest
     ports:
