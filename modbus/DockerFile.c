@@ -1,4 +1,6 @@
-FROM arm32v7/debian:bullseye-slim
+FROM gcc:latest AS build
+
+WORKDIR /app
 
 # Install build tools and required libraries TEST
 RUN apt-get update && apt-get install -y \
@@ -25,5 +27,10 @@ COPY . .
 # Compile your C application
 RUN gcc -o  modbus_to_redis  modbus_to_redis.c config.c -lmodbus -lcjson -lsqlite3 -lhiredis
 
+FROM arm32v7/debian:bullseye-slim
+
+WORKDIR /app
+
+COPY --from=build /app/app /app/app
 # Run the app
 CMD ["./modbus_to_redis"]
