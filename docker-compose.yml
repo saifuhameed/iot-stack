@@ -1,34 +1,61 @@
 version: "3.8"
 services:
   modbus:
-    build: ./modbus
+    container_name: modbus_app
+    build: 
+      context: ./modbus
+      dockerfile: Dockerfile.c
     depends_on:
-      - redis
+      - redis_db
     devices:
       - "/dev/ttyS1:/dev/ttyS1"   # if hardware needed
     volumes:
-      - ./modbus/db:/home/iot/apps/db        # share SQLite configs
-  redis:
+      - shared_data_volume:/app/data        # share SQLite configs
+      - ./modbus:/app
+    networks:
+      - my_network  
+  redis_db:
     image: redis:latest
+    container_name: redis_server
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/home/iot/apps/db
+      - redis_data:/data
+    networks:
+      - my_network  
 
-  flask:
-    build: ./webserver
+  flask_web_app:
+    build: 
+      context: ./webserver
+      dockerfile: Dockerfile.flask
+    container_name: flask_dashboard
     ports:
       - "80:80" # maps container port 80 to host port 80
     depends_on:
-      - redis
+      - redis_db
     volumes:
-      - ./modbus/db:/app/db        # mount SQLite DB
-
+      - shared_data_volume:/app/data       # mount SQLite DB
+      - ./webserver:/app
+    networks:
+      - my_network
   nodered:
     image: nodered/node-red:latest
     ports:
       - "1880:1880"
     depends_on:
-      - redis      
+      - redis_db      
     volumes:
       - ./nodered-data:/data
+    networks:
+      - my_network
+
+volumes:
+  # Define the named volumes at the bottom
+  redis_data:
+    driver: local
+  shared_data_volume:
+    driver: local
+
+networks:
+  my_network:
+    driver: bridge

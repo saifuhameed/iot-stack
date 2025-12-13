@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim
+FROM arm32v7/debian:bullseye-slim
 
 # Install build tools and required libraries
 RUN apt-get update && apt-get install -y \
@@ -9,7 +9,14 @@ RUN apt-get update && apt-get install -y \
     libhiredis-dev \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /home/iot/apps/modbus
+# add new user for docker image
+RUN useradd -ms /bin/bash iotuser
+
+ 
+
+USER iotuser
+
+WORKDIR /app
 
 # Copy source code
 COPY . .
