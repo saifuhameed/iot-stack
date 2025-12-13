@@ -1,6 +1,6 @@
 FROM arm32v7/debian:bullseye-slim
 
-# Install build tools and required libraries
+# Install build tools and required libraries TEST
 RUN apt-get update && apt-get install -y \
     build-essential \
     libmodbus-dev \
