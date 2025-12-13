@@ -6,8 +6,7 @@ RUN apt-get update && apt-get install -y \
     libmodbus-dev \
     libcjson-dev \
     libsqlite3-dev \
-    libhiredis-dev \
-    && rm -rf /var/lib/apt/lists/*
+    libhiredis-dev     
 
 # add new user for docker image
 RUN useradd -ms /bin/bash iotuser

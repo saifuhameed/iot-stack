@@ -4,7 +4,7 @@ services:
     container_name: modbus_app
     build: 
       context: ./modbus
-      dockerfile: Dockerfile.c
+      dockerfile: DockerFile.c
     depends_on:
       - redis_db
     devices:
@@ -27,7 +27,7 @@ services:
   flask_web_app:
     build: 
       context: ./webserver
-      dockerfile: Dockerfile.flask
+      dockerfile: DockerFile.flask
     container_name: flask_dashboard
     ports:
       - "80:80" # maps container port 80 to host port 80
@@ -35,7 +35,7 @@ services:
       - redis_db
     volumes:
       - shared_data_volume:/app/data       # mount SQLite DB
-      - ./webserver:/app
+      - ./webserver:/appls
     networks:
       - my_network
   nodered:
