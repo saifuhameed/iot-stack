@@ -324,7 +324,7 @@ int main() {
 
     sqlite3 *db;
     if (sqlite3_open(cfg.db_path, &db) != SQLITE_OK) {
-        fprintf(stderr, "SQLite open error: %s\n", sqlite3_errmsg(db));
+        fprintf(stderr, "SQLite open error: %s [%s]\n", sqlite3_errmsg(db),cfg.db_path);
         return 1;
     }
 	while (!is_redis_running(cfg.redis_host, cfg.redis_port)) {

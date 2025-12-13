@@ -45,7 +45,7 @@ r = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
 
 # SQLite connection
 def get_db_connection():
-    conn = sqlite3.connect('/app/data/db/iot.db')
+    conn = sqlite3.connect('/app/db/iot.db')
     conn.row_factory = sqlite3.Row
     return conn
 

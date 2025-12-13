@@ -5,12 +5,13 @@ services:
     build: 
       context: ./modbus
       dockerfile: Dockerfile.c
+      no_cache: true
     depends_on:
       - redis_db
     devices:
       - "/dev/ttyS1:/dev/ttyS1"   # if hardware needed
     volumes:
-      - shared_data_volume:/app/data        # share SQLite configs
+      - shared_data_volume:/app/db        # share SQLite configs
       - ./modbus:/app
     networks:
       - my_network  
@@ -28,13 +29,14 @@ services:
     build: 
       context: ./webserver
       dockerfile: Dockerfile.flask
+      no_cache: true
     container_name: flask_dashboard
     ports:
       - "80:80" # maps container port 80 to host port 80
     depends_on:
       - redis_db
     volumes:
-      - shared_data_volume:/app/data       # mount SQLite DB
+      - shared_data_volume:/app/db       # mount SQLite DB
       - ./webserver:/appls
     networks:
       - my_network 
