@@ -35,12 +35,14 @@ RUN apt-get update && apt-get install -y \
 # -r creates a system account
 # -m creates the home directory
 # -s specifies the default shell
-RUN groupadd -r appgroup && useradd -r -m -s /bin/bash -g appgroup appuser
+#RUN groupadd -r appgroup && useradd -r -m -s /bin/bash -g appgroup appuser
 
 # Switch to the new non-root user
-USER appuser
+#USER appuser
 
 WORKDIR /app
+
+RUN mkdir -p /data
 
 COPY --from=builder /build/modbus_to_redis .
 COPY   config.ini .
