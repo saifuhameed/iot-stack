@@ -1,7 +1,7 @@
 # Use a minimal base image, e.g., 'alpine' is very small, 
 # but requires static linking for C apps (use -static in gcc options).
 # If you don't use -static, use a glibc-based image like 'ubuntu:focal-slim' or 'debian:buster-slim'
-FROM arm32v7/alpine:latest
+FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y \    
     build-essential \   
