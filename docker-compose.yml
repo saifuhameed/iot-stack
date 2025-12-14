@@ -1,53 +1,30 @@
-version: "3.8"
+version: "3.9"
+
 services:
-  modbus:
-    container_name: modbus_app
-    build: 
-      context: ./modbus
-      dockerfile: Dockerfile.c
-      no_cache: true
-    depends_on:
-      - redis_db
-    devices:
-      - "/dev/ttyS1:/dev/ttyS1"   # if hardware needed
-    volumes:
-      - shared_data_volume:/app/db        # share SQLite configs
-      - ./modbus:/app
-    networks:
-      - my_network  
-  redis_db:
-    image: redis:latest
-    container_name: redis_server
+  redis:
+    image: redis:7-alpine
+    restart: always
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/db
-    networks:
-      - my_network  
 
-  flask_web_app:
-    build: 
-      context: ./webserver
-      dockerfile: Dockerfile.flask      
-    container_name: flask_dashboard
-    ports:
-      - "80:80" # maps container port 80 to host port 80
+  modbus:
+    build: ./modbus
     depends_on:
-      - redis_db
+      - redis
+    devices:
+      - "/dev/ttyS1:/dev/ttyS1"
+    privileged: true
+    volumes:
+      - ./modbus/iot.db:/data/config.db    
+    restart: always
+
+  flask:
+    build: ./webserver
+    depends_on:
+      - redis
       - modbus
     volumes:
-      - shared_data_volume:/app/db       # mount SQLite DB
-      - ./webserver:/appls
-    networks:
-      - my_network 
-
-volumes:
-  # Define the named volumes at the bottom
-  redis_data:
-    driver: local
-  shared_data_volume:
-    driver: local
-
-networks:
-  my_network:
-    driver: bridge
+      - ./modbus/db/iot.db:/data/iot.db
+    ports:
+      - "80:80"
+    restart: always
