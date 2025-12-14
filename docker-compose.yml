@@ -15,7 +15,7 @@ services:
       - "/dev/ttyS1:/dev/ttyS1"
     privileged: true
     volumes:
-      - ./modbus/iot.db:/data/iot.db    
+      - ./modbus/db/iot.db:/data/iot.db    
     restart: always
 
   flask:
