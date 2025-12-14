@@ -24,8 +24,7 @@ RUN gcc -o  modbus_to_redis  modbus_to_redis.c config.c -lmodbus -lcjson -lsqlit
 # If you don't use -static, use a glibc-based image like 'ubuntu:focal-slim' or 'debian:buster-slim'
 FROM arm32v7/debian:bullseye-slim
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
+RUN apt-get update && apt-get install -y \    
     nano \
     libmodbus-dev \
     libcjson-dev \
