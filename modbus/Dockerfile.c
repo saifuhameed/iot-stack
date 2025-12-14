@@ -27,10 +27,10 @@ FROM arm32v7/debian:bullseye-slim
 RUN apt-get update && apt-get install -y \
     build-essential \
     nano \
-    libmodbus \
-    libcjson \
-    libsqlite3 \
-    libhiredis \
+    libmodbus-dev \
+    libcjson-dev \
+    libsqlite3-dev \
+    libhiredis-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
