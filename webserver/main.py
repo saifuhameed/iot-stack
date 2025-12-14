@@ -286,9 +286,11 @@ def readings():
         sensordata=holding_registers.SENSOR1_DATA.value
     #CAP_PF will return None if no modbus device available and 
     # return "0" if modbus available but sensor not connected, 
-    sensor_check=getRegisterValue(slaveid,sensordata+SENS_DATA_POS.CAP_PF.value)
-    #None="No MODBUS device found", 0= "Sensor head not connected", >0 = "OK"
-    sensorStatus="No MODBUS device found" if sensor_check is None else "OK" if string_to_int(sensor_check)>0 else "Sensor head is not connected"
+    if check_redis_alive():        
+        sensor_check=getRegisterValue(slaveid,sensordata+SENS_DATA_POS.CAP_PF.value)  
+        sensorStatus="No MODBUS device found" if sensor_check is None else "OK" if string_to_int(sensor_check)>0 else "Sensor head is not connected"
+    else:
+        sensorStatus="REDIS connection error."
     #sensorStatus="OK" if sensor_check>0 else ("No MODBUS device found" if sensor_check is None else "Sensor head not connected")
     level_full=string_to_int_by10(getRegisterValue(slaveid,sensorconfig+SENS_PARAM_POS.LEVEL_FULL_MM.value)) 
     liquidLevel=string_to_int_by10_negated(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.LEVEL_IN_MM.value))
