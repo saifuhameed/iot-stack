@@ -6,8 +6,8 @@ services:
       context: ./modbus
       dockerfile: Dockerfile.c
       no_cache: true
-    depends_on:
-      - redis_db
+    #depends_on:
+    #  - redis_db
     devices:
       - "/dev/ttyS1:/dev/ttyS1"   # if hardware needed
     volumes:
