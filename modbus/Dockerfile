@@ -43,6 +43,6 @@ USER appuser
 WORKDIR /app
 
 COPY --from=builder /build/modbus_to_redis .
-
+COPY   config.ini .
 # Run the app
 CMD ["./modbus_to_redis"]
