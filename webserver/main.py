@@ -268,7 +268,20 @@ def get_update_status():
         return jsonify({"status": f"{len(keys)} parameter/s updated" })
     else:
         return jsonify({"status":"Failed"})        
-    
+
+def level_sensor_sanity_check(slaveid,sensordata):
+    if check_redis_alive():        
+        sensor_check=getRegisterValue(slaveid,sensordata.value+SENS_DATA_POS.CAP_PF.value)
+        if sensor_check is not None :
+            if string_to_int(sensor_check)>0:
+                return "OK"
+            else:
+                return "Sensor head is not connected"
+        else:
+            return "No MODBUS device found"
+    else:
+        return "REDIS connection error."
+
 #GET /api/readings?tank=if(tank=='overhead1'):|overhead2|underground
 @app.route("/api/readings")
 def readings():
@@ -285,43 +298,42 @@ def readings():
         slaveid =6       
         sensorconfig=holding_registers.SENSOR1_CONFIG.value
         sensordata=holding_registers.SENSOR1_DATA.value
-    #CAP_PF will return None if no modbus device available and 
-    # return "0" if modbus available but sensor not connected, 
-    if check_redis_alive():        
-        sensor_check=getRegisterValue(slaveid,sensordata+SENS_DATA_POS.CAP_PF.value)  
-        sensorStatus="No MODBUS device found" if sensor_check is None else "OK" if string_to_int(sensor_check)>0 else "Sensor head is not connected"
+    #CAP_PF will return None if no modbus device available and return "0" if modbus available but sensor not connected, 
+    sensorStatus=level_sensor_sanity_check(slaveid,sensordata)
+
+    if sensorStatus=="OK": 
+        #sensorStatus="OK" if sensor_check>0 else ("No MODBUS device found" if sensor_check is None else "Sensor head not connected")
+        level_full=string_to_int_by10(getRegisterValue(slaveid,sensorconfig+SENS_PARAM_POS.LEVEL_FULL_MM.value)) 
+        liquidLevel=string_to_int_by10_negated(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.LEVEL_IN_MM.value))
+        sensorCap=string_to_int_by10(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.CAP_PF.value))
+        frequency_lsb=string_to_int(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.FREQUENCY_LSB.value))
+        frequency_msb=string_to_int(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.FREQUENCY_MSB.value))
+        temp=string_to_int(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.LIQUID_TEMP.value))
+        if(temp!= TEMPERATURE_ERROR_VALUE):
+            temp=round((temp/10)-10,1)
+        else:
+            temp=None
+        alarmLow=string_to_int_by10(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.ALARM_LEVEL_LOW.value))
+        alarmHigh=string_to_int_by10(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.ALARM_LEVEL_HIGH.value))
+        levelHighSet=string_to_int_by10(getRegisterValue(slaveid,sensorconfig+SENS_PARAM_POS.LEVEL_HIGH_IN_PERC_SET.value))
+        levelLowSet=string_to_int_by10(getRegisterValue(slaveid,sensorconfig+SENS_PARAM_POS.LEVEL_LOW_IN_PERC_SET.value))
+        freq=frequency_msb<<16 | frequency_lsb
+        liquidLevelPct=round(liquidLevel*100/level_full,1) if level_full>0 else 0
+        alarm="LOW" if (alarmLow==1) else "NORMAL"
+        alarm="HIGH" if (alarmHigh==1) else "NORMAL"
+        data = {
+                "sensorStatus": sensorStatus  ,  
+                "liquidTemperature": temp if freq>0 else None,    
+                "sensorCap": sensorCap if freq>0 else None,   # percentage
+                "frequency": freq if freq>0 else None,     # °C
+                "liquidLevel": liquidLevel if freq>0 else None,   
+                "alarm": alarm if freq>0 else None,
+                "liquidLevelPct":liquidLevelPct if freq>0 else None,  
+                "liquidLevelHighSet":levelHighSet,
+                "liquidLevelLowSet":levelLowSet
+            }
     else:
-        sensorStatus="REDIS connection error."
-    #sensorStatus="OK" if sensor_check>0 else ("No MODBUS device found" if sensor_check is None else "Sensor head not connected")
-    level_full=string_to_int_by10(getRegisterValue(slaveid,sensorconfig+SENS_PARAM_POS.LEVEL_FULL_MM.value)) 
-    liquidLevel=string_to_int_by10_negated(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.LEVEL_IN_MM.value))
-    sensorCap=string_to_int_by10(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.CAP_PF.value))
-    frequency_lsb=string_to_int(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.FREQUENCY_LSB.value))
-    frequency_msb=string_to_int(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.FREQUENCY_MSB.value))
-    temp=string_to_int(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.LIQUID_TEMP.value))
-    if(temp!= TEMPERATURE_ERROR_VALUE):
-        temp=round((temp/10)-10,1)
-    else:
-        temp=None
-    alarmLow=string_to_int_by10(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.ALARM_LEVEL_LOW.value))
-    alarmHigh=string_to_int_by10(getRegisterValue(slaveid,sensordata+SENS_DATA_POS.ALARM_LEVEL_HIGH.value))
-    levelHighSet=string_to_int_by10(getRegisterValue(slaveid,sensorconfig+SENS_PARAM_POS.LEVEL_HIGH_IN_PERC_SET.value))
-    levelLowSet=string_to_int_by10(getRegisterValue(slaveid,sensorconfig+SENS_PARAM_POS.LEVEL_LOW_IN_PERC_SET.value))
-    freq=frequency_msb<<16 | frequency_lsb
-    liquidLevelPct=round(liquidLevel*100/level_full,1) if level_full>0 else 0
-    alarm="LOW" if (alarmLow==1) else "NORMAL"
-    alarm="HIGH" if (alarmHigh==1) else "NORMAL"
-    data = {
-            "sensorStatus": sensorStatus  , # non zero means sensor OK
-            "liquidTemperature": temp if freq>0 else None,    
-            "sensorCap": sensorCap if freq>0 else None,   # percentage
-            "frequency": freq if freq>0 else None,     # °C
-            "liquidLevel": liquidLevel if freq>0 else None,   
-            "alarm": alarm if freq>0 else None,
-            "liquidLevelPct":liquidLevelPct if freq>0 else None,  
-            "liquidLevelHighSet":levelHighSet,
-            "liquidLevelLowSet":levelLowSet
-        }
+        data = { "sensorStatus": sensorStatus }    
     return jsonify(data)
     
 @app.route("/api/iot_data")

@@ -227,11 +227,12 @@
 	  el("sensorStatus").textContent = data.sensorStatus ;
 	  if(data.sensorStatus=="OK")
 	  {
-		el("sensorStatus").classList.remove('status-fault');
-		el("sensorStatus").classList.add('status-ok');
+		  el("sensorStatus").classList.remove('status-fault');
+		  el("sensorStatus").classList.add('status-ok');
+      
 	  }else{
-		el("sensorStatus").classList.remove('status-ok');
-		el("sensorStatus").classList.add('status-fault');
+		  el("sensorStatus").classList.remove('status-ok');
+		  el("sensorStatus").classList.add('status-fault');
 	  }
 
     }
