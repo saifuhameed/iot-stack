@@ -5,8 +5,7 @@ WORKDIR /app
 
 # Install build tools and required libraries 
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    nano \
+    build-essential \    
     libmodbus-dev \
     libcjson-dev \
     libsqlite3-dev \
@@ -24,6 +23,15 @@ RUN gcc -o  modbus_to_redis  modbus_to_redis.c config.c -lmodbus -lcjson -lsqlit
 # but requires static linking for C apps (use -static in gcc options).
 # If you don't use -static, use a glibc-based image like 'ubuntu:focal-slim' or 'debian:buster-slim'
 FROM arm32v7/debian:bullseye-slim
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    nano \
+    libmodbus \
+    libcjson \
+    libsqlite3 \
+    libhiredis \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
