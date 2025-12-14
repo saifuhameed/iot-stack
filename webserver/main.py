@@ -89,11 +89,12 @@ def denormalize_data(val):
     return val
     
 def getRegisterValue (slaveid,registeradress):
-    try:
-        value = r.get(f"modbus:{slaveid}:reg{registeradress}")
-        return value
-    except redis.exceptions.ConnectionError:
-        return None  # Redis not running / not reachable
+    return r.get(f"modbus:{slaveid}:reg{registeradress}")
+    #try:
+    #    value = r.get(f"modbus:{slaveid}:reg{registeradress}")
+     #   return value
+    #except redis.exceptions.ConnectionError:
+    #    return None  # Redis not running / not reachable
 
 def check_redis_alive():
     try:
