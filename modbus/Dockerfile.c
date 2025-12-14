@@ -21,5 +21,6 @@ RUN gcc -o  modbus_to_redis  modbus_to_redis.c config.c -lmodbus -lcjson -lsqlit
 # Ensure the binary has execute permissions (though 'COPY' usually preserves them)
 RUN chmod +x modbus_to_redis
 
+WORKDIR /app
 # Run the app
 CMD ["./modbus_to_redis"]
