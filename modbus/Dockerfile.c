@@ -21,6 +21,15 @@ RUN gcc -o  modbus_to_redis  modbus_to_redis.c config.c -lmodbus -lcjson -lsqlit
 # Ensure the binary has execute permissions (though 'COPY' usually preserves them)
 RUN chmod +x modbus_to_redis
 
+# Create a new group and user
+# -r creates a system account
+# -m creates the home directory
+# -s specifies the default shell
+RUN groupadd -r appgroup && useradd -r -m -s /bin/bash -g appgroup appuser
+
+# Switch to the new non-root user
+USER appuser
+
 WORKDIR /app
 # Run the app
 CMD ["./modbus_to_redis"]

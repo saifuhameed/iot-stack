@@ -6,8 +6,8 @@ services:
       context: ./modbus
       dockerfile: Dockerfile.c
       no_cache: true
-    #depends_on:
-    #  - redis_db
+    depends_on:
+      - redis_db
     devices:
       - "/dev/ttyS1:/dev/ttyS1"   # if hardware needed
     volumes:
@@ -34,6 +34,7 @@ services:
       - "80:80" # maps container port 80 to host port 80
     depends_on:
       - redis_db
+      - modbus
     volumes:
       - shared_data_volume:/app/db       # mount SQLite DB
       - ./webserver:/appls
