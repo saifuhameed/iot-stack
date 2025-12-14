@@ -22,7 +22,7 @@ RUN gcc -o  modbus_to_redis  modbus_to_redis.c config.c -lmodbus -lcjson -lsqlit
 # Use a minimal base image, e.g., 'alpine' is very small, 
 # but requires static linking for C apps (use -static in gcc options).
 # If you don't use -static, use a glibc-based image like 'ubuntu:focal-slim' or 'debian:buster-slim'
-FROM arm32v7/debian:bullseye-slim
+FROM arm32v7/alpine:latest
 
 RUN apt-get update && apt-get install -y \    
     nano \
