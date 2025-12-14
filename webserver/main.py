@@ -271,7 +271,7 @@ def get_update_status():
 
 def level_sensor_sanity_check(slaveid,sensordata):
     if check_redis_alive():        
-        sensor_check=getRegisterValue(slaveid,sensordata.value+SENS_DATA_POS.CAP_PF.value)
+        sensor_check=getRegisterValue(slaveid,sensordata+SENS_DATA_POS.CAP_PF.value)
         if sensor_check is not None :
             if string_to_int(sensor_check)>0:
                 return "OK"
