@@ -46,5 +46,6 @@ RUN mkdir -p /data
 
 COPY --from=builder /build/modbus_to_redis .
 COPY   config.ini .
+COPY   db/iot.db /data/iot.db
 # Run the app
 CMD ["./modbus_to_redis"]
