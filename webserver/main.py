@@ -89,14 +89,38 @@ def denormalize_data(val):
     return val
     
 def getRegisterValue (slaveid,registeradress):
-    return r.get(f"modbus:{slaveid}:reg{registeradress}")
-  
+    try:
+        value = r.get(f"modbus:{slaveid}:reg{registeradress}")
+        return value
+    except redis.exceptions.ConnectionError:
+        return None  # Redis not running / not reachable
+
+def check_redis_alive():
+    try:
+        r.set("health_check_key", "1")
+        return True
+    except redis.exceptions.ConnectionError:
+        return False
+    except redis.exceptions.RedisError:
+        # other Redis errors (e.g., read-only)
+        return False
+      
+@app.route("/health")
+def health():
+    """Optional: health check"""
+    try:
+        if r.ping():
+            return jsonify({"redis": "ok"}), 200
+    except redis.exceptions.ConnectionError:
+        return jsonify({"redis": "down"}), 503  
   
 # POST /api/update-parameters
 #   body: { tank, zeroPf, fullPf,  levelFullMm, levelHighSet, levelLowSet, oscRes1, oscRes2, oscKVal }
 @app.route("/api/update-parameters", methods=['POST'])
 def updateParameters():
     if request.method == 'POST':
+        if not check_redis_alive():
+            return {"status": "redis-connection-error", "updated": "None"}
         data = request.get_json()
         tank = data.get("tank")
         zeroPf=  string_to_intX10(data.get('zeroPf'))        
@@ -188,7 +212,7 @@ def parameters():
         slaveid =6       
         sensorconfig=holding_registers.SENSOR1_CONFIG.value
         sensordata=holding_registers.SENSOR1_DATA.value
-        
+     
     zeroPf=string_to_int_by10(getRegisterValue(slaveid,sensorconfig+SENS_PARAM_POS.CAP_LEVEL_ZERO_PF.value))
     fullPf=string_to_int_by10(getRegisterValue(slaveid,sensorconfig+SENS_PARAM_POS.CAP_LEVEL_FULL_PF.value))
     levelFullMm=string_to_int_by10(getRegisterValue(slaveid,sensorconfig+SENS_PARAM_POS.LEVEL_FULL_MM.value)) 
@@ -220,6 +244,8 @@ def parameters():
 #GET "/api/get-update-status"
 @app.route("/api/get-update-status")
 def get_update_status():
+    if not check_redis_alive():
+        return {"status": "redis-connection-error", "updated": "None"}
     write_pattern="modbus:write:*"
     write_keys = []
     for key in r.scan_iter(match=write_pattern):
