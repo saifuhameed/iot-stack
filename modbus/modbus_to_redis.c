@@ -288,7 +288,7 @@ void handle_modbus_write_command2(sqlite3 *db, redisContext *redis, modbus_t *ct
 
 // Function to check if Redis is accepting TCP connections
 int is_redis_running(char * redis_host, int redis_port) {
-    redisContext *c = redisConnect(host, port);
+    redisContext *c = redisConnect(redis_host, redis_port);
     if (c == NULL) {
         fprintf(stderr, "Failed to allocate redis context\n");
         return 0;
