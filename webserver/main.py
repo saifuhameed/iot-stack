@@ -41,11 +41,11 @@ class holding_registers(Enum):
 app = Flask(__name__)
 
 # Redis connection
-r = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
+r = redis.Redis(host='redis', port=6379, decode_responses=True)
 
 # SQLite connection
 def get_db_connection():
-    conn = sqlite3.connect('/app/db/iot.db')
+    conn = sqlite3.connect('/data/iot.db')
     conn.row_factory = sqlite3.Row
     return conn
 
