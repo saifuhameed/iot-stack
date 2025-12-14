@@ -1,7 +1,9 @@
-FROM arm32v7/debian:bullseye-slim
+# --- Stage 1: Build Stage ---
+FROM gcc:latest AS build
 
+WORKDIR /app
 
-# Install build tools and required libraries TEST
+# Install build tools and required libraries 
 RUN apt-get update && apt-get install -y \
     build-essential \
     nano \
@@ -11,23 +13,25 @@ RUN apt-get update && apt-get install -y \
     libhiredis-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# add new user for docker image
-RUN useradd -ms /bin/bash iotuser
-
- 
-
-USER iotuser
-
-WORKDIR /app
-
-# Copy source code
+# copy source code and related files   
 COPY . .
 
 # Compile your C application
 RUN gcc -o  modbus_to_redis  modbus_to_redis.c config.c -lmodbus -lcjson -lsqlite3 -lhiredis
 
+# --- Stage 2: Run Stage ---
+# Use a minimal base image, e.g., 'alpine' is very small, 
+# but requires static linking for C apps (use -static in gcc options).
+# If you don't use -static, use a glibc-based image like 'ubuntu:focal-slim' or 'debian:buster-slim'
+FROM arm32v7/debian:bullseye-slim
+
 WORKDIR /app
 
-COPY --from=build /app/app /app/app
+# Copy the compiled executable from the 'build' stage to the 'run' stage
+COPY --from=build /app/modbus_to_redis /app/modbus_to_redis
+
+# Ensure the binary has execute permissions (though 'COPY' usually preserves them)
+RUN chmod +x modbus_to_redis
+
 # Run the app
 CMD ["./modbus_to_redis"]
