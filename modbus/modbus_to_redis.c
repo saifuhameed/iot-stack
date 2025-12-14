@@ -8,7 +8,7 @@
 #include <cjson/cJSON.h>
 #include "config.h"
 #include <errno.h>
-#include <arpa/inet.h>  // for socket functions
+//#include <arpa/inet.h>  // for socket functions
 
 #define MAX_DEVICES 128
 #define MAX_REGISTERS 64
@@ -288,30 +288,21 @@ void handle_modbus_write_command2(sqlite3 *db, redisContext *redis, modbus_t *ct
 
 // Function to check if Redis is accepting TCP connections
 int is_redis_running(char * redis_host, int redis_port) {
-    int sockfd;
-    struct sockaddr_in serv_addr;
-
-    // Create socket
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        perror("Socket creation failed");
+    redisContext *c = redisConnect(host, port);
+    if (c == NULL) {
+        fprintf(stderr, "Failed to allocate redis context\n");
         return 0;
     }
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(redis_port);
-
-    // Convert IPv4 address from text to binary
-    if (inet_pton(AF_INET, redis_host, &serv_addr.sin_addr) <= 0) {
-        perror("Invalid address");
-        close(sockfd);
+    if (c->err) {
+        fprintf(stderr, "Redis connection error: %s\n", c->errstr);
+        redisFree(c);
         return 0;
     }
 
-    // Try connecting to Redis
-    int result = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    close(sockfd);
-
-    return (result == 0); // 1 if connected, 0 otherwise
+    // Redis is reachable
+    redisFree(c);
+    return 1;
 }
 
 int main() {
